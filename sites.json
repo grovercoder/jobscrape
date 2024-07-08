@@ -1,0 +1,102 @@
+[
+    {
+        "code": "RVC",
+        "name": "Rocky View County",
+        "postings_url": "https://can241.dayforcehcm.com/CandidatePortal/en-US/rockyview",
+        "selector_jobs_container": "#jobListingList",
+        "selector_job_links": ".posting-title a",
+        "selector_job_title": ".posting-title-container",
+        "selector_job_id": "",
+        "selector_location": "",
+        "selector_job_description": ".job-posting-content"
+    },
+    {
+        "code": "CityOfCalgary",
+        "name": "City of Calgary",
+        "postings_url": "https://www.calgary.ca/careers.html",
+        "selector_jobs_container": "div.careers",
+        "selector_job_links": "a",
+        "selector_job_title": "#HRS_SCH_WRK2_POSTING_TITLE",
+        "selector_job_id": "#HRS_SCH_WRK2_HRS_JOB_OPENING_ID",
+        "selector_location": "#HRS_SCH_WRK_HRS_DESCRLONG",
+        "selector_job_description": "#HRS_SCH_PSTDSC_DESCRLONG\\$0"
+    },
+    {
+        "code": "GOA",
+        "name": "Government of Alberta",
+        "postings_url": "https://jobpostings.alberta.ca/search/?q=&sortColumn=referencedate&sortDirection=desc&startrow=1",
+        "offset": "startrow",
+        "page_pattern": "(https://jobpostings.alberta.ca/search/\\?q=&sortColumn=referencedate&sortDirection=desc&startrow=)(\\d+)",
+        "page_group": 2,
+        "page_type": "offset",
+        "selector_jobs_container": "#searchresults tbody",
+        "selector_job_links": ".jobTitle.visible-phone a",
+        "selector_job_title": "#job-title",
+        "selector_job_id": "",
+        "selector_location": "#job-location .jobGeoLocation",
+        "selector_job_description": ".jobDisplay .job"
+        
+    },
+    {
+        "code": "CityOfAirdrie",
+        "name": "City Of Airdrie",
+        "postings_url": "https://clients.njoyn.com/CL2/xweb/xweb.asp?tbtoken=Zl9YRRJQDVAHEXICRVxXYE9PAxVfaVUudVBMIV0NB3lYX0YeXDcbBWQuJS5ALiReLiUuQC4kXk0YGhNTTXNkF3U%3D&chk=ZVpaShM%3D&CLID=61430&page=joblisting&lang=1",
+        "selector_jobs_container": "#searchtable tbody",
+        "selector_job_links": "a",
+        "selector_job_title": "h1",
+        "selector_job_id": "input[type='hidden'][name='jobid']",
+        "selector_location": "",
+        "selector_job_description": ".njnSection.noborder"
+    },
+    
+    {
+        "code": "SummitSearch",
+        "name": "Summit Search Group",
+        "postings_url": "https://summitsearchgroup.com/job-search/page/1/",
+        "page_pattern": "(https://summitsearchgroup.com/job-search/page/)(\\d+)/",
+        "page_group": 2,
+        "page_type": "page",
+        "selector_jobs_container": ".job-container",
+        "selector_job_links": ".job-body .job-title a",
+        "selector_job_title": "section.single-job-banner h1",
+        "selector_job_id": "",
+        "selector_location": "",
+        "selector_job_description": ".redesign-job-detail-container"
+    },
+    {
+        "code": "MacdonaldSearch",
+        "name": "MacDonald Search Group",
+        "postings_url": "https://www.macdonaldsearchgroup.com/job-listings",
+        "selector_jobs_container": "#job-listings .jobs-container",
+        "selector_job_links": "li a",
+        "selector_job_title": "#job-details article h1",
+        "selector_job_id": "",
+        "selector_location": "",
+        "selector_job_description": "#job-details article"
+    },
+    {
+        "code": "Rogers",
+        "name": "Rogers",
+        "postings_url": "https://jobs.rogers.com/go/Technology/9547900/",
+        "selector_jobs_container": "#searchresults",
+        "selector_job_links": "tbody tr td a",
+        "selector_job_title": "div.job h1",
+        "selector_job_id": "",
+        "selector_location": ".jobGeoLocation",
+        "selector_job_description": ".jobdescription"
+    },
+    {
+        "code": "Telus",
+        "name": "Telus",
+        "postings_url": "https://careers.telus.com/search?q=&sortColumn=referencedate&sortDirection=desc&startrow=1",
+        "page_pattern": "(https://careers.telus.com/search?q=&sortColumn=referencedate&sortDirection=desc&startrow=)(\\d+)/",
+        "page_group": 2,
+        "page_type": "offset",
+        "selector_jobs_container": "#searchresults",
+        "selector_job_links": "tbody tr td a.jobTitle-link",
+        "selector_job_title": "h1",
+        "selector_job_id": "",
+        "selector_location": ".jobGeoLocation",
+        "selector_job_description": ".jobdescription"
+    }
+]
