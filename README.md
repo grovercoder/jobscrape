@@ -79,7 +79,7 @@ You can use the database natively to scan, analyze, and/or search the job postin
 The `compare.py` script is used to automate some of that database work:
 
 1. The specified resume file is read, and the keywords for the text content are extracted.
-1. For each resume keyword, a search is done against the database to find jobs that also have that keywordd
+1. For each resume keyword, a search is done against the database to find jobs that also have that keyword
 1. A score is calculated to indicate the percentage of resume keywords that matched the job posting's keywords.  This scoring system is not perfect and can be improved, but it is a starting point.  You can expect low percentage values here - I'm currently considering 25% a very strong match.  This score is only intended as a tool to indicate which job postings should receive more attention.
 1. The `quick_report.html` file is generated listing the top matching jobs.  This list is roughly equivalent to spending the time to manually load and scan each of the job boards to find matches that are relevant to you.
 
@@ -125,6 +125,8 @@ Sites have the following properties then:
 - The `sites.json` file is a small list of initial sites.  So the initial list of jobs may not be very large. I'm averaging around 300 job postings each run, keeping in mind that a small subset of these are not relevant to my field.  However, it is interesting to note that some postings I would not consider have a high keyword match.  For instance in my case I am a senior software developer, but a "judicial clerk" role had a high match for me.  Being a law clerk was NOT on my radar at all, but maybe...
 
 - Sites that do client side rendering of content cannot be scraped using the current technique.  You need to be able to do an HTTP GET and see the relevant content in that output.  If instead you only see a ```<script>``` tag with javascript that then fetches and creates the content, this approach will not work.  
+
+- Duplication.  While the system attempts to find existing jobs when examining a job record, there are a number of factors that can lead to a job posting being stored more than once.  For instance, if the same job posting were posted to Indeed and Glassdoor, or if a site uses a variable in their URL - perhaps a timestamp - so that the URL is always different.  This means that the current system can see duplication of job postings.  Effort is needed here to help reduce this.  One option might be to use the "company" and "title" as a sort of unique key, but the "company" value may not be available on the detail page for some sites.
 
 - JobSpy - At the moment using the proxies with the JobSpy tool results in errors.  I have not gotten to the bottom of this yet.  Not specifying the proxy list allows JobSpy to run, but it is then using your local IP which could lead to issues.
 
