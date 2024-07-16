@@ -223,8 +223,9 @@ class JobScraper:
                 entries = soup.find_all(container)
                 links = []
                 for entry in entries:
-                    if entry.find(site.selector_job_title)
-                    tag = entry.find('link')
+                    if entry.find(site.selector_job_title):
+                        tag = entry.find('link')
+                        
                     if tag and 'href' in tag.attrs:
                         links.append(tag['href'])
             
