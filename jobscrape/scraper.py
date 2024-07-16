@@ -11,7 +11,11 @@ import time
 
 import logging
 
-from jobscrape.db import Job, DB, Keyword, JobKeyword
+import pandas as pd
+from jobspy import scrape_jobs
+
+from jobscrape.models import Job, Keyword, JobKeyword, Site
+from jobscrape.db import DB
 from jobscrape.analyzer import Analyzer
 from jobscrape.proxies import Proxies
 
@@ -26,12 +30,6 @@ logging.basicConfig(level=logging.INFO,  # Set the logging level
 
 logger = logging.getLogger(__name__)
 
-class Site:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
 class JobScraper:
     def __init__(self):
         self.db = DB()
@@ -45,40 +43,102 @@ class JobScraper:
         # print(self.proxy_list)
         # sys.exit()
 
-    def load_sites(self):
-        logger.info("LOADING SITES")
+    def import_sites_from_json(self):
+        logger.info("IMPORTING SITES")
+
         target = Path(__file__).resolve().parent.joinpath(SITES_JSON).resolve()
         if not Path(target).exists():
             self.sites = []
             return
         
+        sites = []
         with open(target) as f:
             sites_data = json.load(f)
-            self.sites = [Site(**site) for site in sites_data]
+        
+        session = self.db.get_session()
+        try:
+            for site_data in sites_data:
+                site = Site(**site_data)
+                site_dict = {k: v for k, v in site.__dict__.items() if not k.startswith('_')}
+                Site.add(session, **site_dict)
+        except Exception as e:
+            print(f"Error adding sites to the database: {e}")
+        finally:
+            session.close()
+           
             
 
+
+    def load_sites(self):
+        session = self.db.get_session()
+        self.sites = Site.list_all(session)
+        session.close()
+
+        if len(self.sites) == 0:
+            logger.warn("No sites found in database.  Did you forget to import with the `-i` parameter?")
+            sys.exit(1)
+
+    def load_boards(self, search_phrases=[]):
+        """
+        Use JobSpy (https://github.com/Bunsly/JobSpy) to load Indeed, LinkedIn, etc.
+        """
+
+        proxy_list = self.proxies.proxy_list(anon=4) 
+        if not proxy_list or len(proxy_list) == 0:
+            print('No proxies found. Stopping.')
+            return
+
+        session = self.db.get_session()
+        for phrase in search_phrases:
+            random.shuffle(self.proxy_list)
+            logger.info(f"JobSpy: {phrase}")
+            jobs = scrape_jobs(
+                site_name=["indeed", "linkedin", "zip_recruiter", "glassdoor"],
+                search_term=phrase,
+                location="Calgary, AB",
+                results_wanted=50,
+                hours_old=72, # (only Linkedin/Indeed is hour specific, others round up to days old)
+                country_indeed='Canada',  # only needed for indeed / glassdoor
+
+                # proxies=proxy_list, 
+            )
+
+            # convert NaN to None
+            jobs = jobs.where(pd.notnull(jobs), None)
+
+            for index, row in jobs.iterrows():
+                job = Job.add(
+                    session,
+                    collected = int(time.time() * 1000),
+                    source = row["site"],
+                    title = row["title"],
+                    url = row["job_url"],
+                    description = row["description"],
+                    location = row["location"],
+                    remote_id = row["id"]
+                )
+
+                if job.id > 0 and not row["description"] is None:
+                    keywords = self.analyzer.extract_keywords(row["description"])
+                    for kw in keywords:
+                        keyword_record = Keyword.add(session, kw)
+                        jk = JobKeyword.add(session, job_id=job.id, keyword_id=keyword_record.id)
+
+            session.commit()
+            time.sleep(random.randrange(start=10, stop=30))
+
+        session.close()        
+        
     def load_urls(self, desired_sites=None):        
         for site in self.sites:
             if not desired_sites or site.code in desired_sites:
                 # print(f'Loading {site.name} ')
                 logger.info(f'Loading site: {site.name}')
-                if not hasattr(site, 'offset') and not hasattr(site, 'page_pattern'):
-                    self.extract_jobs(site.postings_url, site)
-                
-                # if hasattr(site, 'offset'):
-                #     current_offset = 0
-                #     job_count = self.extract_jobs(site.postings_url, site)
-                #     while job_count:
-                #         current_offset += job_count
-                #         parsed_url = urlparse(site.postings_url)
-                #         query_params = parse_qs(parsed_url.query)
-                #         query_params[site.offset] = [str(current_offset)]
-                #         updated_query = urlencode(query_params, doseq=True)
-                #         updated_url = urlunparse(parsed_url._replace(query=updated_query))
-                #         logger.debug(f'> adjusting offset {current_offset} : {updated_url}')
-                #         job_count = self.extract_jobs(updated_url, site)
 
-                if hasattr(site, 'page_pattern'):
+                if not site.page_pattern:
+                    self.extract_jobs(site.postings_url, site)
+               
+                if site.page_pattern:
                     # If a page_pattern exists, the site uses paging for the job listings
                     # In this case, we start by requesting the postings_url, and process the jobs we found.
                     # If we found jobs, we then adjust the page using the page_pattern, and page_type.
@@ -91,7 +151,7 @@ class JobScraper:
                     job_count = self.extract_jobs(site.postings_url, site)
                     # Use 20 pages as the maximum to help prevent run-away situtions
                     while job_count and current_page < 20:
-                        if hasattr(site, 'page_type') and site.page_type == 'offset':
+                        if site.page_type == 'offset':
                             current_page += job_count
                             logger.debug(f'> determining offset: {current_page}')
                         else:
@@ -117,7 +177,7 @@ class JobScraper:
         retries = 0
         while retries < max_retries:
             try:
-                proxy = self.proxies.requests_proxies()  # Replace with your proxy retrieval logic
+                proxy = self.proxies.requests_proxies()  
                 response = requests.get(target, proxies=proxy, timeout=10)
                 return response
             except (ProxyError, RequestException) as e:
@@ -136,16 +196,37 @@ class JobScraper:
         response = self.get_url(target_url)
 
         if response and response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            careers_div = soup.select_one(site.selector_jobs_container)
+            content_parser = "html.parser"
+            if site.rss:
+                content_parser = "lxml-xml"
 
-            if not careers_div:
-                logger.error(f'Could not find jobs container - is the site client side rendered?')
-                return jobs_found
+            soup = BeautifulSoup(response.content, content_parser)
 
-            container = getattr(site, 'selector_job_links', 'a')
-            links = careers_div.select(container)
-            links = [urljoin(site.postings_url, link.get('href')) for link in links]
+            if content_parser == 'html.parser':
+                careers_div = soup.select_one(site.selector_jobs_container)
+
+                if not careers_div:
+                    logger.error(f'Could not find jobs container - is the site client side rendered?')
+                    return jobs_found
+
+                container = getattr(site, 'selector_job_links', 'a')
+                links = careers_div.select(container)
+                links = [urljoin(site.postings_url, link.get('href')) for link in links]
+
+            # Extract the RSS Feed links
+            # (This may be specific to the Job Bank at this time and need to be generalized more)
+            if content_parser == "lxml-xml":
+                container = getattr(site, 'selector_job_links', None)
+                if not container:
+                    return 0
+                
+                entries = soup.find_all(container)
+                links = []
+                for entry in entries:
+                    if entry.find(site.selector_job_title)
+                    tag = entry.find('link')
+                    if tag and 'href' in tag.attrs:
+                        links.append(tag['href'])
             
             session = self.db.get_session()
             for link in links:
@@ -214,3 +295,8 @@ class JobScraper:
                 return " ".join(texts)
         
         return ""
+    
+    def purge_old_jobs(self):
+        limit = 7
+        logger.info(f'Purging jobs older than {limit} days')
+        return self.db.purge_old_jobs(olderthan=limit)

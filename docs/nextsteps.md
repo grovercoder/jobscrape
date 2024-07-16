@@ -1,8 +1,5 @@
 Next Steps:
 
-1. Merge JobSpy code to gather jobs from the big job boards.
-
-1. Create script to update database with new jobs.  This will be run as a cron job independently of the API or web interfaces
 
 1. Create cron job to scan sites periodically
     - probably at least twice a day - 12:00 noonish, and midnight-ish perhaps.

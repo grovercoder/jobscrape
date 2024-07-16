@@ -25,7 +25,6 @@
         "code": "GOA",
         "name": "Government of Alberta",
         "postings_url": "https://jobpostings.alberta.ca/search/?q=&sortColumn=referencedate&sortDirection=desc&startrow=1",
-        "offset": "startrow",
         "page_pattern": "(https://jobpostings.alberta.ca/search/\\?q=&sortColumn=referencedate&sortDirection=desc&startrow=)(\\d+)",
         "page_group": 2,
         "page_type": "offset",
@@ -98,5 +97,17 @@
         "selector_job_id": "",
         "selector_location": ".jobGeoLocation",
         "selector_job_description": ".jobdescription"
+    },
+    {
+        "code": "JobBank",
+        "name": "Job Bank",
+        "postings_url": "https://www.jobbank.gc.ca/jobsearch/feed/jobSearchRSSfeed",
+        "rss": 1,
+        "selector_jobs_container": "feed",
+        "selector_job_links": "entry",
+        "selector_job_title": "div.job-posting-details-body h1.title span[property='title']",
+        "selector_job_id": "",
+        "selector_location": "div.job-posting-details-body .job-postiing-brief span.city",
+        "selector_job_description": "div.job-posting-detail-requirements"
     }
 ]

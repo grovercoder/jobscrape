@@ -1,6 +1,7 @@
 # Application Specific
 proxylist.json
 jobs.db
+quick_report.html
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
