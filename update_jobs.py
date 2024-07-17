@@ -42,7 +42,7 @@ def main():
 
     if args.import_json:
         js.import_sites_from_json()
-        sys.exit
+        sys.exit()
 
 
     js.purge_old_jobs()
