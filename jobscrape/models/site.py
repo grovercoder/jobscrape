@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean
 class Site(Base):
     __tablename__ = "sites"
     id = Column(Integer, primary_key=True)
+    enabled = Column(Boolean, default=True)
     code = Column(String)
     name = Column(String)
     postings_url = Column(String)
@@ -81,3 +82,7 @@ class Site(Base):
     @classmethod
     def list_all(cls, session):
         return session.query(cls).all()
+    
+    @classmethod
+    def list_enabled(cls, session):
+        return session.query(cls).filter(cls.enabled==True).all()

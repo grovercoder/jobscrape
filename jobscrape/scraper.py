@@ -71,7 +71,7 @@ class JobScraper:
 
     def load_sites(self):
         session = self.db.get_session()
-        self.sites = Site.list_all(session)
+        self.sites = Site.list_enabled(session)
         session.close()
 
         if len(self.sites) == 0:
@@ -179,6 +179,14 @@ class JobScraper:
             try:
                 proxy = self.proxies.requests_proxies()  
                 response = requests.get(target, proxies=proxy, timeout=10)
+
+                if response.status_code == 429:
+                    # too many requests, wait for a bit and try again
+                    naplength = random.randrange(15, 60)
+                    logger.warn(f'429 received - napping for {naplength} seconds')
+                    time.sleep(naplength)
+                    response = requests.get(target, proxies=proxy, timeout=10)
+
                 return response
             except (ProxyError, RequestException) as e:
                 retries += 1
@@ -216,18 +224,21 @@ class JobScraper:
             # Extract the RSS Feed links
             # (This may be specific to the Job Bank at this time and need to be generalized more)
             if content_parser == "lxml-xml":
-                container = getattr(site, 'selector_job_links', None)
+                
+                container = site.selector_jobs_container
                 if not container:
                     return 0
                 
                 entries = soup.find_all(container)
                 links = []
+                
                 for entry in entries:
-                    if entry.find(site.selector_job_title):
-                        tag = entry.find('link')
-                        
-                    if tag and 'href' in tag.attrs:
+                    tag = entry.find('link')
+                    if tag.has_attr('href'):
                         links.append(tag['href'])
+                    else:
+                        links.append(tag.text)
+
             
             session = self.db.get_session()
             for link in links:
@@ -250,7 +261,7 @@ class JobScraper:
         if target_url:
             logger.info(f"JOB URL: {target_url}")
             response = self.get_url(target_url)
-
+    
             if not response or response.status_code >= 400:
                 # we could not retrieve the job page
                 return None
@@ -259,6 +270,7 @@ class JobScraper:
             # response = requests.get(target_url, proxies=self.proxy_list)
             soup = BeautifulSoup(response.content, 'html.parser')
             description = self._get_value(soup, site.selector_job_description)
+            
 
             session = self.db.get_session()
             logger.debug(' - adding job')
@@ -271,6 +283,7 @@ class JobScraper:
                 location = self._get_value(soup, site.selector_location),
                 remote_id = self._get_value(soup, site.selector_job_id)
             )
+            # print(job.__dict__)
 
             if job.id > 0:
                 logger.debug(' - extracting keywords')
@@ -279,10 +292,7 @@ class JobScraper:
                 for kw in keywords:
                     keyword_record = Keyword.add(session, kw)
                     jk = JobKeyword.add(session, job_id=job.id, keyword_id=keyword_record.id)
-                    # jk = JobKeyword(job_id=job.id, keyword_id=keyword_record.id)
-                    # session.add(jk)
-                    # JobKeyword.add(session, job.id, keyword_record.id)
-                    # self.db.add_job_keyword(stored_job, kw)
+
 
             session.commit()
             session.close()
