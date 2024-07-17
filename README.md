@@ -87,7 +87,7 @@ For myself, the whole process takes approximately 15 minutes, most of it doing t
 
 ## Be Kind
 
-The sites are providing a mutual service.  They are looking for candidates for their job postings, while job seekers want to see what job postinigs might be relevant to them.  However abusing the service degrades the performance of the servers and can lead to decreased good will.  
+The sites are providing a mutual service.  They are looking for candidates for their job postings, while job seekers want to see what job postings might be relevant to them.  However abusing the service degrades the performance of the servers and can lead to decreased good will.  
 
 Try not to scan too often.  The job postings do not change much in an hour, or even a day.  So let's be kind to the system administrators who run the servers we are pulling the data from.  Scanning too often could lead to a Denial of Service type result on the server which just hurts all of us.
 
